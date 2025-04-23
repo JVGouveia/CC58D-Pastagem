@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,5 +29,6 @@ public class Produtor extends BaseEntity {
     private String email;
 
     @OneToMany(mappedBy = "produtor", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
     private List<Propriedade> propriedades = new ArrayList<>();
 } 

@@ -2,6 +2,9 @@ package com.pastagem.controller;
 
 import com.pastagem.model.Produtor;
 import com.pastagem.service.ProdutorService;
+
+import jakarta.validation.Valid;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -28,12 +31,12 @@ public class ProdutorController {
     }
 
     @PostMapping
-    public ResponseEntity<Produtor> createProdutor(@RequestBody Produtor produtor) {
+    public ResponseEntity<Produtor> createProdutor(@Valid @RequestBody Produtor produtor) {
         return ResponseEntity.ok(produtorService.save(produtor));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Produtor> updateProdutor(@PathVariable Long id, @RequestBody Produtor produtor) {
+    public ResponseEntity<Produtor> updateProdutor(@PathVariable Long id,@Valid @RequestBody Produtor produtor) {
         return produtorService.findById(id)
                 .map(existingProdutor -> {
                     produtor.setId(id);

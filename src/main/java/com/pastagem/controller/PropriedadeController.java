@@ -2,6 +2,9 @@ package com.pastagem.controller;
 
 import com.pastagem.model.Propriedade;
 import com.pastagem.service.PropriedadeService;
+
+import jakarta.validation.Valid;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -28,12 +31,12 @@ public class PropriedadeController {
     }
 
     @PostMapping
-    public ResponseEntity<Propriedade> createPropriedade(@RequestBody Propriedade propriedade) {
+    public ResponseEntity<Propriedade> createPropriedade(@Valid @RequestBody Propriedade propriedade) {
         return ResponseEntity.ok(propriedadeService.save(propriedade));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Propriedade> updatePropriedade(@PathVariable Long id, @RequestBody Propriedade propriedade) {
+    public ResponseEntity<Propriedade> updatePropriedade(@PathVariable Long id, @Valid @RequestBody Propriedade propriedade) {
         return propriedadeService.findById(id)
                 .map(existingPropriedade -> {
                     propriedade.setId(id);

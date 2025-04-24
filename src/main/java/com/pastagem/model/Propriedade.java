@@ -1,10 +1,11 @@
 package com.pastagem.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,18 +17,24 @@ import java.util.List;
 @ToString
 public class Propriedade extends BaseEntity {
 
+    @NotBlank(message = "O nome é obrigatório")
     @Column(nullable = false)
     private String nome;
 
+    @NotBlank(message = "O endereço é obrigatório")
     @Column(nullable = false)
     private String endereco;
 
+    @NotBlank(message = "A cidade é obrigatória")
     @Column(nullable = false)
     private String cidade;
 
+    @NotBlank(message = "O estado é obrigatório")
     @Column(nullable = false)
     private String estado;
 
+    @NotBlank(message = "O CNPJ é obrigatório")
+    @Pattern(regexp = "\\d{14}", message = "O CNPJ deve conter exatamente 14 dígitos numéricos")
     @Column(nullable = false)
     private String cnpj;
 
@@ -36,6 +43,5 @@ public class Propriedade extends BaseEntity {
 
     @ManyToOne
     @JoinColumn(name = "produtor_id", nullable = false)
-    @JsonBackReference
     private Produtor produtor;
 } 

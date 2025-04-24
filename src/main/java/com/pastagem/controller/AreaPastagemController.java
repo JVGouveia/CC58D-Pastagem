@@ -2,6 +2,9 @@ package com.pastagem.controller;
 
 import com.pastagem.model.AreaPastagem;
 import com.pastagem.service.AreaPastagemService;
+
+import jakarta.validation.Valid;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -28,12 +31,12 @@ public class AreaPastagemController {
     }
 
     @PostMapping
-    public ResponseEntity<AreaPastagem> createAreaPastagem(@RequestBody AreaPastagem areaPastagem) {
+    public ResponseEntity<AreaPastagem> createAreaPastagem(@Valid @RequestBody AreaPastagem areaPastagem) {
         return ResponseEntity.ok(areaPastagemService.save(areaPastagem));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<AreaPastagem> updateAreaPastagem(@PathVariable Long id, @RequestBody AreaPastagem areaPastagem) {
+    public ResponseEntity<AreaPastagem> updateAreaPastagem(@PathVariable Long id, @Valid @RequestBody AreaPastagem areaPastagem) {
         return areaPastagemService.findById(id)
                 .map(existingAreaPastagem -> {
                     areaPastagem.setId(id);

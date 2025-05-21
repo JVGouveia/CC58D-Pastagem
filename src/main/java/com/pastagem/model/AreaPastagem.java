@@ -35,5 +35,6 @@ public class AreaPastagem extends BaseEntity {
 
     @ManyToOne
     @JoinColumn(name = "propriedade_id", nullable = false)
+    //
     private Propriedade propriedade;
 } 

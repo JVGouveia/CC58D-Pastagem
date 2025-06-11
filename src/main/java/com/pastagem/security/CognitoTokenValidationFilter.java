@@ -1,5 +1,6 @@
 package com.pastagem.security;
 
+import java.io.IOException;
 import java.security.PublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Base64;
@@ -10,9 +11,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
@@ -21,13 +25,16 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.Collections;
 
 @Component
-public class CognitoTokenValidationInterceptor implements HandlerInterceptor {
+public class CognitoTokenValidationFilter extends OncePerRequestFilter {
 
-    private static final Logger logger = LoggerFactory.getLogger(CognitoTokenValidationInterceptor.class);
+    private static final Logger logger = LoggerFactory.getLogger(CognitoTokenValidationFilter.class);
 
     @Value("${aws.cognito.userPoolId}")
     private String userPoolId;
@@ -85,21 +92,26 @@ public class CognitoTokenValidationInterceptor implements HandlerInterceptor {
     }
 
     @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
-            throws Exception {
-        String authorizationHeader = request.getHeader("Authorization");
-        logger.info("Validando requisição para: {}", request.getRequestURI());
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
+        
+        String path = request.getRequestURI();
+        logger.info("Processando requisição para: {}", path);
 
-        if (authorizationHeader == null) {
-            logger.error("Header Authorization não encontrado");
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            return false;
+        // Ignorar a rota de login
+        if (path.equals("/auth/login")) {
+            logger.info("Ignorando validação para rota de login");
+            filterChain.doFilter(request, response);
+            return;
         }
 
-        if (!authorizationHeader.startsWith("Bearer ")) {
-            logger.error("Header Authorization não começa com 'Bearer '");
+        String authorizationHeader = request.getHeader("Authorization");
+        logger.info("Header Authorization: {}", authorizationHeader);
+
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            logger.error("Header Authorization inválido ou ausente");
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            return false;
+            return;
         }
 
         String token = authorizationHeader.substring(7);
@@ -114,24 +126,34 @@ public class CognitoTokenValidationInterceptor implements HandlerInterceptor {
             if (publicKey == null) {
                 logger.error("Chave pública não encontrada para o token");
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                return false;
+                return;
             }
 
             Algorithm algorithm = Algorithm.RSA256((RSAPublicKey) publicKey, null);
             algorithm.verify(jwt);
             logger.info("Token verificado com sucesso");
             
+            // Criar autenticação
+            String username = jwt.getSubject();
+            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                username,
+                null,
+                Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))
+            );
+            
+            // Definir autenticação no contexto de segurança
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            logger.info("Autenticação definida para usuário: {}", username);
+            
             request.setAttribute("cognitoUser", jwt);
-            return true;
+            filterChain.doFilter(request, response);
 
         } catch (JWTVerificationException e) {
             logger.error("Token JWT do Cognito inválido: {}", e.getMessage(), e);
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            return false;
         } catch (Exception e) {
             logger.error("Erro ao validar token do Cognito: {}", e.getMessage(), e);
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            return false;
         }
     }
 } 

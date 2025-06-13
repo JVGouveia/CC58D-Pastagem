@@ -16,7 +16,6 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -34,6 +33,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
 
 import com.pastagem.dto.AuthRequest;
+import com.pastagem.dto.AuthResponse;
+import com.pastagem.model.Usuario;
+import com.pastagem.repository.UsuarioRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @RestController
 @RequestMapping("/auth")
@@ -51,6 +54,9 @@ public class AuthController {
 
     @Value("${aws.cognito.clientSecret}")
     private String clientSecret;
+
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
     private final Map<String, PublicKey> publicKeyCache = new HashMap<>();
     private final RestTemplate restTemplate = new RestTemplate();
@@ -79,9 +85,37 @@ public class AuthController {
             HttpEntity<String> request = new HttpEntity<>(body, headers);
 
             ResponseEntity<String> response = restTemplate.postForEntity(cognitoUrl, request, String.class);
+            
+            if (response.getStatusCode() == HttpStatus.OK) {
+                JsonNode responseJson = objectMapper.readTree(response.getBody());
+                JsonNode authResult = responseJson.get("AuthenticationResult");
+                
+                // Extrair o cognitoId do token
+                String idToken = authResult.get("IdToken").asText();
+                DecodedJWT jwt = JWT.decode(idToken);
+                String cognitoId = jwt.getSubject();
+                
+                // Buscar informações do usuário pelo cognitoId
+                Usuario usuario = usuarioRepository.findByCognitoId(cognitoId)
+                    .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+                // Criar resposta com informações do usuário
+                AuthResponse authResponse = AuthResponse.builder()
+                    .idToken(idToken)
+                    .accessToken(authResult.get("AccessToken").asText())
+                    .refreshToken(authResult.get("RefreshToken").asText())
+                    .cargo(usuario.getCargo())
+                    .nome(usuario.getNome())
+                    .email(usuario.getEmail())
+                    .build();
+
+                return ResponseEntity.ok(authResponse);
+            }
+
             return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
 
         } catch (Exception e) {
+            logger.error("Erro durante o login: ", e);
             return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
         }
     }
@@ -158,6 +192,7 @@ public class AuthController {
                     JsonNode.class);
 
             if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                @SuppressWarnings("null")
                 JsonNode authResultNode = response.getBody().get("AuthenticationResult");
                 if (authResultNode != null && authResultNode.has("IdToken") && authResultNode.has("AccessToken")) {
                     Map<String, String> refreshedTokens = new HashMap<>();
@@ -183,6 +218,7 @@ public class AuthController {
         }
     }
 
+    @SuppressWarnings("null")
     private PublicKey getPublicKey(String keyId) {
         if (publicKeyCache.containsKey(keyId)) {
             return publicKeyCache.get(keyId);

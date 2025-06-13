@@ -13,6 +13,7 @@ public class InterceptorConfig implements WebMvcConfigurer {
     @Autowired
     private CognitoTokenValidationInterceptor cognitoTokenValidationInterceptor;
 
+    @SuppressWarnings("null")
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(cognitoTokenValidationInterceptor)

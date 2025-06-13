@@ -161,6 +161,7 @@ public class PastagemServiceImpl implements PastagemService {
                 .sum();
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     @Transactional(readOnly = true)
     public BigDecimal calcularDensidadeMediaPorPropriedade(Long propriedadeId) {

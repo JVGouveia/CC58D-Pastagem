@@ -5,7 +5,6 @@ import com.pastagem.model.Propriedade;
 import com.pastagem.model.Cargo;
 import com.pastagem.service.UsuarioService;
 import com.pastagem.service.CognitoService;
-import com.pastagem.dto.RegisterRequest;
 import com.pastagem.dto.UsuarioRegisterDTO;
 import com.pastagem.dto.ErrorResponse;
 import com.pastagem.dto.MessageResponse;
@@ -21,7 +20,6 @@ import org.slf4j.LoggerFactory;
 
 import jakarta.validation.Valid;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 @RestController

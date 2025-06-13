@@ -23,8 +23,6 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -44,8 +42,7 @@ public class CognitoTokenValidationFilter extends OncePerRequestFilter {
 
     private final Map<String, PublicKey> publicKeyCache = new java.util.HashMap<>();
     private final RestTemplate restTemplate = new RestTemplate();
-    private final ObjectMapper objectMapper = new ObjectMapper();
-
+    @SuppressWarnings("null")
     private PublicKey getPublicKey(String keyId) {
         logger.info("Buscando chave pública para o kid: {}", keyId);
 
@@ -91,6 +88,7 @@ public class CognitoTokenValidationFilter extends OncePerRequestFilter {
         return null;
     }
 
+    @SuppressWarnings("null")
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {

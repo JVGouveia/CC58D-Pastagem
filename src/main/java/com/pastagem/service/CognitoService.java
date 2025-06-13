@@ -206,12 +206,6 @@ public class CognitoService {
                 });
     }
 
-    public String getCognitoIdFromToken(String token) {
-        // Implementar a lógica para extrair o cognitoId do token JWT
-        // Normalmente está no campo 'sub' do token
-        return null; // TODO: Implementar
-    }
-
     public void updateUserEmailInCognito(String oldEmail, String newEmail, String nome) {
         try {
             logger.info("Atualizando email do usuário no Cognito de {} para {}", oldEmail, newEmail);

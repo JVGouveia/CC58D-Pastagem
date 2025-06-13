@@ -70,6 +70,7 @@ public class Pastagem extends BaseEntity {
     }
 
     // Métodos de conveniência para cálculos
+    @SuppressWarnings("deprecation")
     public BigDecimal calcularDensidadePorHectare() {
         if (areaHectares != null && areaHectares.compareTo(BigDecimal.ZERO) > 0 && capacidadeSuporte != null) {
             return BigDecimal.valueOf(capacidadeSuporte).divide(areaHectares, 2, BigDecimal.ROUND_HALF_UP);

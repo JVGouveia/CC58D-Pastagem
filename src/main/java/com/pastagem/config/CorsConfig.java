@@ -17,6 +17,8 @@ public class CorsConfig {
         // Permitir requisições do frontend e do IP local
         config.addAllowedOrigin("http://localhost:3001");
         config.addAllowedOrigin("http://192.168.2.199:3001");
+        config.addAllowedOrigin("http://localhost:5174"); // Frontend Vite
+        config.addAllowedOrigin("http://127.0.0.1:5174"); // Frontend Vite (alternativo)
         
         // Permitir todos os métodos HTTP
         config.addAllowedMethod("*");

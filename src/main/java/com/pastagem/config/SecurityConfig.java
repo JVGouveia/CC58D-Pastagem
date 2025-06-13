@@ -41,7 +41,7 @@ public class SecurityConfig {
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/auth/login").permitAll()
+                .requestMatchers("/auth/login", "/auth/refresh").permitAll()
                 .anyRequest().permitAll() // Temporariamente permitindo todas as requisições após validação do token
             )
             .addFilterBefore(cognitoTokenValidationFilter, UsernamePasswordAuthenticationFilter.class);
@@ -52,7 +52,12 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3001", "http://192.168.2.199:3001"));
+        configuration.setAllowedOrigins(Arrays.asList(
+            "http://localhost:3001",
+            "http://192.168.2.199:3001",
+            "http://localhost:5174",
+            "http://127.0.0.1:5174"
+        ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);

@@ -41,4 +41,6 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     long countPropriedadesByUsuarioId(@Param("usuarioId") Long usuarioId);
 
     Optional<Usuario> findByCognitoId(String cognitoId);
+
+    Optional<Usuario> findByEmail(String email);
 }

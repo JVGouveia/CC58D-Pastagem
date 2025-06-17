@@ -95,6 +95,72 @@ public class PropriedadeServiceImpl implements PropriedadeService {
         propriedadeRepository.deleteById(id);
     }
 
+    // Novos métodos com id_usuario
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Propriedade> findByUsuarioId(Long usuarioId, Pageable pageable) {
+        if (usuarioId == null || usuarioId <= 0) {
+            return Page.empty(pageable);
+        }
+        return propriedadeRepository.findByUsuarioId(usuarioId, pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Propriedade> findByIdAndUsuarioId(Long id, Long usuarioId) {
+        if (id == null || id <= 0 || usuarioId == null || usuarioId <= 0) {
+            return Optional.empty();
+        }
+        return propriedadeRepository.findByIdAndUsuarioId(id, usuarioId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean existsByIdAndUsuarioId(Long id, Long usuarioId) {
+        if (id == null || id <= 0 || usuarioId == null || usuarioId <= 0) {
+            return false;
+        }
+        return propriedadeRepository.existsByIdAndUsuarioId(id, usuarioId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Propriedade> findByUsuarioIdAndCidade(Long usuarioId, String cidade) {
+        if (usuarioId == null || usuarioId <= 0 || cidade == null || cidade.trim().isEmpty()) {
+            return List.of();
+        }
+        return propriedadeRepository.findByUsuarioIdAndCidadeIgnoreCase(usuarioId, cidade.trim());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Propriedade> findByUsuarioIdAndEstado(Long usuarioId, String estado) {
+        if (usuarioId == null || usuarioId <= 0 || estado == null || estado.trim().isEmpty()) {
+            return List.of();
+        }
+        return propriedadeRepository.findByUsuarioIdAndEstadoIgnoreCase(usuarioId, estado.trim());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Propriedade> findByUsuarioIdAndNomeContaining(Long usuarioId, String nome) {
+        if (usuarioId == null || usuarioId <= 0 || nome == null || nome.trim().isEmpty()) {
+            return List.of();
+        }
+        return propriedadeRepository.findByUsuarioIdAndNomeContainingIgnoreCase(usuarioId, nome.trim());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Propriedade> findByUsuarioIdAndCidadeAndEstado(Long usuarioId, String cidade, String estado) {
+        if (usuarioId == null || usuarioId <= 0 || cidade == null || cidade.trim().isEmpty() || 
+            estado == null || estado.trim().isEmpty()) {
+            return List.of();
+        }
+        return propriedadeRepository.findByUsuarioIdAndCidadeIgnoreCaseAndEstadoIgnoreCase(
+            usuarioId, cidade.trim(), estado.trim());
+    }
+
     // Operações específicas de busca
     @Override
     @Transactional(readOnly = true)
@@ -166,11 +232,7 @@ public class PropriedadeServiceImpl implements PropriedadeService {
         if (propriedadeId == null || propriedadeId <= 0) {
             return BigDecimal.ZERO;
         }
-        
-        List<Pastagem> pastagens = findPastagensByPropriedadeId(propriedadeId);
-        return pastagens.stream()
-                .map(Pastagem::getAreaHectares)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return propriedadeRepository.calcularAreaTotalPastagens(propriedadeId);
     }
 
     // Validações de negócio
@@ -178,26 +240,20 @@ public class PropriedadeServiceImpl implements PropriedadeService {
         if (propriedade.getNome() == null || propriedade.getNome().trim().isEmpty()) {
             throw new IllegalArgumentException("Nome da propriedade é obrigatório");
         }
-        
         if (propriedade.getEndereco() == null || propriedade.getEndereco().trim().isEmpty()) {
             throw new IllegalArgumentException("Endereço é obrigatório");
         }
-        
+        if (propriedade.getAreaTotal() == null || propriedade.getAreaTotal().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Área total deve ser maior que zero");
+        }
         if (propriedade.getCidade() == null || propriedade.getCidade().trim().isEmpty()) {
             throw new IllegalArgumentException("Cidade é obrigatória");
         }
-        
         if (propriedade.getEstado() == null || propriedade.getEstado().trim().isEmpty()) {
             throw new IllegalArgumentException("Estado é obrigatório");
         }
-        
-        if (propriedade.getUsuario() == null || propriedade.getUsuario().getId() == null) {
+        if (propriedade.getUsuario() == null) {
             throw new IllegalArgumentException("Usuário é obrigatório");
-        }
-        
-        // Verificar se o usuário existe
-        if (!usuarioService.existsById(propriedade.getUsuario().getId())) {
-            throw new IllegalArgumentException("Usuário não encontrado");
         }
     }
 }

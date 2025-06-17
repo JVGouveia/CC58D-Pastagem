@@ -19,6 +19,12 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import jakarta.annotation.PostConstruct;
+import java.util.Map;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 
 @Service
 public class CognitoService {
@@ -233,6 +239,45 @@ public class CognitoService {
         } catch (Exception e) {
             logger.error("Erro ao atualizar email no Cognito: {}", e.getMessage());
             throw new RuntimeException("Erro ao atualizar email no Cognito: " + e.getMessage(), e);
+        }
+    }
+
+    public void alterarSenha(String senhaAtual, String novaSenha) {
+        try {
+            logger.info("Alterando senha do usuário no Cognito");
+            
+            // Extrair token do header de autorização
+            String authHeader = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest().getHeader("Authorization");
+            String idToken = authHeader.substring(7); // Remove "Bearer "
+            
+            // Obter o sub (ID do usuário) do token
+            String sub = extractSubFromToken(idToken);
+            
+            // Criar requisição de alteração de senha
+            AdminSetUserPasswordRequest request = new AdminSetUserPasswordRequest()
+                .withUserPoolId(userPoolId)
+                .withUsername(sub)
+                .withPassword(novaSenha)
+                .withPermanent(true);
+
+            // Executar alteração de senha
+            cognitoClient.adminSetUserPassword(request);
+            logger.info("Senha alterada com sucesso no Cognito");
+        } catch (Exception e) {
+            logger.error("Erro ao alterar senha no Cognito: {}", e.getMessage());
+            throw new RuntimeException("Erro ao alterar senha: " + e.getMessage(), e);
+        }
+    }
+
+    private String extractSubFromToken(String token) {
+        try {
+            String[] parts = token.split("\\.");
+            String payload = new String(Base64.getUrlDecoder().decode(parts[1]));
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode jsonNode = mapper.readTree(payload);
+            return jsonNode.get("sub").asText();
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao extrair sub do token", e);
         }
     }
 } 

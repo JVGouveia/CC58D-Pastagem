@@ -5,6 +5,7 @@ import com.pastagem.model.Propriedade;
 import com.pastagem.model.Cargo;
 import com.pastagem.repository.UsuarioRepository;
 import com.pastagem.service.UsuarioService;
+import com.pastagem.service.CognitoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,6 +21,9 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private CognitoService cognitoService;
 
     // Operações básicas CRUD
     @Override
@@ -79,8 +83,25 @@ public class UsuarioServiceImpl implements UsuarioService {
         if (!propriedades.isEmpty()) {
             throw new RuntimeException("Não é possível excluir usuário que possui propriedades cadastradas");
         }
-        
-        usuarioRepository.deleteById(id);
+
+        // Buscar o usuário para obter o email antes de excluir
+        Optional<Usuario> usuarioOpt = findById(id);
+        if (usuarioOpt.isPresent()) {
+            Usuario usuario = usuarioOpt.get();
+            String email = usuario.getEmail();
+            
+            // Excluir do banco de dados
+            usuarioRepository.deleteById(id);
+            
+            // Excluir do Cognito
+            try {
+                cognitoService.deleteUserFromCognito(email);
+            } catch (Exception e) {
+                // Log do erro mas não interrompe a operação
+                // O usuário já foi excluído do banco de dados
+                e.printStackTrace();
+            }
+        }
     }
 
     // Operações específicas de busca

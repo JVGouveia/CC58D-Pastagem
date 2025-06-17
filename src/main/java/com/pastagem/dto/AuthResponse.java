@@ -13,4 +13,6 @@ public class AuthResponse {
     private Cargo cargo;
     private String nome;
     private String email;
+    private String cognitoId;
+    private Long id;
 } 

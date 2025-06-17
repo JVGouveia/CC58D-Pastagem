@@ -34,10 +34,10 @@ public class PropriedadeController {
 
     // Operações básicas CRUD
 
-    @GetMapping
-    public ResponseEntity<Page<Propriedade>> findAll(@PageableDefault(size = 20) Pageable pageable) {
+    @GetMapping("/usuario/{id_usuario}")
+    public ResponseEntity<Page<Propriedade>> findAll(@PathVariable Long id_usuario, @PageableDefault(size = 20) Pageable pageable) {
         try {
-            Page<Propriedade> propriedades = propriedadeService.findAll(pageable);
+            Page<Propriedade> propriedades = propriedadeService.findByUsuarioId(id_usuario, pageable);
             return ResponseEntity.ok(propriedades);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -54,10 +54,10 @@ public class PropriedadeController {
         }
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<Propriedade> findById(@PathVariable Long id) {
+    @GetMapping("/{id}/usuario/{id_usuario}")
+    public ResponseEntity<Propriedade> findById(@PathVariable Long id, @PathVariable Long id_usuario) {
         try {
-            Optional<Propriedade> propriedade = propriedadeService.findById(id);
+            Optional<Propriedade> propriedade = propriedadeService.findByIdAndUsuarioId(id, id_usuario);
             return propriedade.map(ResponseEntity::ok)
                              .orElse(ResponseEntity.notFound().build());
         } catch (Exception e) {
@@ -65,8 +65,8 @@ public class PropriedadeController {
         }
     }
 
-    @PostMapping
-    public ResponseEntity<Propriedade> save(@Valid @RequestBody PropriedadeCreateDTO dto, HttpServletRequest request) {
+    @PostMapping("/usuario/{id_usuario}")
+    public ResponseEntity<Propriedade> save(@PathVariable Long id_usuario, @Valid @RequestBody PropriedadeCreateDTO dto, HttpServletRequest request) {
         try {
             // Pega o ID do usuário do token JWT
             DecodedJWT jwt = (DecodedJWT) request.getAttribute("cognitoUser");
@@ -75,6 +75,11 @@ public class PropriedadeController {
             // Busca o usuário pelo ID do Cognito
             Usuario usuario = usuarioService.findByCognitoId(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado"));
+
+            // Verifica se o usuário tem permissão
+            if (!usuario.getId().equals(id_usuario)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
 
             // Converte o DTO para entidade
             Propriedade propriedade = new Propriedade();
@@ -95,16 +100,21 @@ public class PropriedadeController {
         }
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<Propriedade> update(@PathVariable Long id, @Valid @RequestBody PropriedadeCreateDTO dto, HttpServletRequest request) {
+    @PutMapping("/{id}/usuario/{id_usuario}")
+    public ResponseEntity<Propriedade> update(@PathVariable Long id, @PathVariable Long id_usuario, @Valid @RequestBody PropriedadeCreateDTO dto, HttpServletRequest request) {
         try {
             // Busca a propriedade existente
-            Propriedade propriedadeExistente = propriedadeService.findById(id)
+            Propriedade propriedadeExistente = propriedadeService.findByIdAndUsuarioId(id, id_usuario)
                 .orElseThrow(() -> new IllegalArgumentException("Propriedade não encontrada"));
             
             // Pega o ID do usuário do token JWT
             DecodedJWT jwt = (DecodedJWT) request.getAttribute("cognitoUser");
             String userId = jwt.getSubject();
+
+            // Verifica se o usuário tem permissão
+            if (!propriedadeExistente.getUsuario().getId().equals(id_usuario)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
 
             // Atualiza apenas os campos necessários
             propriedadeExistente.setNome(dto.getNome());
@@ -122,9 +132,15 @@ public class PropriedadeController {
         }
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteById(@PathVariable Long id) {
+    @DeleteMapping("/{id}/usuario/{id_usuario}")
+    public ResponseEntity<Void> deleteById(@PathVariable Long id, @PathVariable Long id_usuario) {
         try {
+            // Verifica se a propriedade pertence ao usuário
+            Optional<Propriedade> propriedade = propriedadeService.findByIdAndUsuarioId(id, id_usuario);
+            if (propriedade.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+
             propriedadeService.deleteById(id);
             return ResponseEntity.noContent().build();
         } catch (IllegalArgumentException e) {
@@ -138,52 +154,43 @@ public class PropriedadeController {
 
     // Operações específicas de busca
 
-    @GetMapping("/usuario/{usuarioId}")
-    public ResponseEntity<List<Propriedade>> findByUsuarioId(@PathVariable Long usuarioId) {
+    @GetMapping("/usuario/{id_usuario}/cidade/{cidade}")
+    public ResponseEntity<List<Propriedade>> findByCidade(@PathVariable Long id_usuario, @PathVariable String cidade) {
         try {
-            List<Propriedade> propriedades = propriedadeService.findByUsuarioId(usuarioId);
+            List<Propriedade> propriedades = propriedadeService.findByUsuarioIdAndCidade(id_usuario, cidade);
             return ResponseEntity.ok(propriedades);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    @GetMapping("/cidade/{cidade}")
-    public ResponseEntity<List<Propriedade>> findByCidade(@PathVariable String cidade) {
+    @GetMapping("/usuario/{id_usuario}/estado/{estado}")
+    public ResponseEntity<List<Propriedade>> findByEstado(@PathVariable Long id_usuario, @PathVariable String estado) {
         try {
-            List<Propriedade> propriedades = propriedadeService.findByCidade(cidade);
+            List<Propriedade> propriedades = propriedadeService.findByUsuarioIdAndEstado(id_usuario, estado);
             return ResponseEntity.ok(propriedades);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    @GetMapping("/estado/{estado}")
-    public ResponseEntity<List<Propriedade>> findByEstado(@PathVariable String estado) {
+    @GetMapping("/usuario/{id_usuario}/buscar")
+    public ResponseEntity<List<Propriedade>> findByNomeContaining(@PathVariable Long id_usuario, @RequestParam String nome) {
         try {
-            List<Propriedade> propriedades = propriedadeService.findByEstado(estado);
+            List<Propriedade> propriedades = propriedadeService.findByUsuarioIdAndNomeContaining(id_usuario, nome);
             return ResponseEntity.ok(propriedades);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    @GetMapping("/buscar")
-    public ResponseEntity<List<Propriedade>> findByNomeContaining(@RequestParam String nome) {
-        try {
-            List<Propriedade> propriedades = propriedadeService.findByNomeContaining(nome);
-            return ResponseEntity.ok(propriedades);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
-    @GetMapping("/localidade")
+    @GetMapping("/usuario/{id_usuario}/localidade")
     public ResponseEntity<List<Propriedade>> findByCidadeAndEstado(
+            @PathVariable Long id_usuario,
             @RequestParam String cidade, 
             @RequestParam String estado) {
         try {
-            List<Propriedade> propriedades = propriedadeService.findByCidadeAndEstado(cidade, estado);
+            List<Propriedade> propriedades = propriedadeService.findByUsuarioIdAndCidadeAndEstado(id_usuario, cidade, estado);
             return ResponseEntity.ok(propriedades);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -192,10 +199,10 @@ public class PropriedadeController {
 
     // Verificação de existência
 
-    @GetMapping("/{id}/existe")
-    public ResponseEntity<Boolean> existsById(@PathVariable Long id) {
+    @GetMapping("/{id}/usuario/{id_usuario}/existe")
+    public ResponseEntity<Boolean> existsById(@PathVariable Long id, @PathVariable Long id_usuario) {
         try {
-            boolean existe = propriedadeService.existsById(id);
+            boolean existe = propriedadeService.existsByIdAndUsuarioId(id, id_usuario);
             return ResponseEntity.ok(existe);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -204,9 +211,14 @@ public class PropriedadeController {
 
     // Operações relacionadas
 
-    @GetMapping("/{id}/pastagens")
-    public ResponseEntity<List<Pastagem>> findPastagensByPropriedadeId(@PathVariable Long id) {
+    @GetMapping("/{id}/usuario/{id_usuario}/pastagens")
+    public ResponseEntity<List<Pastagem>> findPastagensByPropriedadeId(@PathVariable Long id, @PathVariable Long id_usuario) {
         try {
+            // Verifica se a propriedade pertence ao usuário
+            if (!propriedadeService.existsByIdAndUsuarioId(id, id_usuario)) {
+                return ResponseEntity.notFound().build();
+            }
+
             List<Pastagem> pastagens = propriedadeService.findPastagensByPropriedadeId(id);
             return ResponseEntity.ok(pastagens);
         } catch (Exception e) {
@@ -214,9 +226,14 @@ public class PropriedadeController {
         }
     }
 
-    @GetMapping("/{id}/pastagens/count")
-    public ResponseEntity<Long> countPastagensByPropriedadeId(@PathVariable Long id) {
+    @GetMapping("/{id}/usuario/{id_usuario}/pastagens/count")
+    public ResponseEntity<Long> countPastagensByPropriedadeId(@PathVariable Long id, @PathVariable Long id_usuario) {
         try {
+            // Verifica se a propriedade pertence ao usuário
+            if (!propriedadeService.existsByIdAndUsuarioId(id, id_usuario)) {
+                return ResponseEntity.notFound().build();
+            }
+
             long count = propriedadeService.countPastagensByPropriedadeId(id);
             return ResponseEntity.ok(count);
         } catch (Exception e) {
@@ -224,9 +241,14 @@ public class PropriedadeController {
         }
     }
 
-    @GetMapping("/{id}/area-total")
-    public ResponseEntity<BigDecimal> calcularAreaTotalPastagens(@PathVariable Long id) {
+    @GetMapping("/{id}/usuario/{id_usuario}/area-total")
+    public ResponseEntity<BigDecimal> calcularAreaTotalPastagens(@PathVariable Long id, @PathVariable Long id_usuario) {
         try {
+            // Verifica se a propriedade pertence ao usuário
+            if (!propriedadeService.existsByIdAndUsuarioId(id, id_usuario)) {
+                return ResponseEntity.notFound().build();
+            }
+
             BigDecimal areaTotal = propriedadeService.calcularAreaTotalPastagens(id);
             return ResponseEntity.ok(areaTotal);
         } catch (Exception e) {

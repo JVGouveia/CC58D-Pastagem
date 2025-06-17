@@ -18,6 +18,15 @@ public interface PropriedadeService {
     Propriedade save(Propriedade propriedade, String userId);
     void deleteById(Long id);
 
+    // Novos métodos com id_usuario
+    Page<Propriedade> findByUsuarioId(Long usuarioId, Pageable pageable);
+    Optional<Propriedade> findByIdAndUsuarioId(Long id, Long usuarioId);
+    boolean existsByIdAndUsuarioId(Long id, Long usuarioId);
+    List<Propriedade> findByUsuarioIdAndCidade(Long usuarioId, String cidade);
+    List<Propriedade> findByUsuarioIdAndEstado(Long usuarioId, String estado);
+    List<Propriedade> findByUsuarioIdAndNomeContaining(Long usuarioId, String nome);
+    List<Propriedade> findByUsuarioIdAndCidadeAndEstado(Long usuarioId, String cidade, String estado);
+
     // Operações específicas de busca
     List<Propriedade> findByUsuarioId(Long usuarioId);
     List<Propriedade> findByCidade(String cidade);

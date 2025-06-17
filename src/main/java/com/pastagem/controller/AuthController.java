@@ -107,6 +107,8 @@ public class AuthController {
                     .cargo(usuario.getCargo())
                     .nome(usuario.getNome())
                     .email(usuario.getEmail())
+                    .cognitoId(cognitoId)
+                    .id(usuario.getId())
                     .build();
 
                 return ResponseEntity.ok(authResponse);

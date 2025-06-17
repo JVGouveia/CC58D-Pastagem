@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Optional;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/usuarios")
@@ -302,6 +303,24 @@ public class UsuarioController {
         } catch (Exception e) {
             logger.error("Erro ao registrar usuário: {}", e.getMessage());
             return ResponseEntity.badRequest().body(new ErrorResponse("Erro ao registrar usuário: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/alterar-senha")
+    public ResponseEntity<?> alterarSenha(@RequestBody Map<String, String> request) {
+        try {
+            String senhaAtual = request.get("senhaAtual");
+            String novaSenha = request.get("novaSenha");
+            
+            if (senhaAtual == null || novaSenha == null) {
+                return ResponseEntity.badRequest().body(new ErrorResponse("Senha atual e nova senha são obrigatórias"));
+            }
+
+            cognitoService.alterarSenha(senhaAtual, novaSenha);
+            return ResponseEntity.ok(new MessageResponse("Senha alterada com sucesso"));
+        } catch (Exception e) {
+            logger.error("Erro ao alterar senha: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
         }
     }
 }
